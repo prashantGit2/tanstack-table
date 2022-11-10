@@ -1,0 +1,22 @@
+.App {
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.vh30{
+  min-height: max-content;
+  height:30vh;
+}
+.center-items{
+  display:flex;
+  align-items: center;
+  justify-content: center;
+}
+.bg-red{
+  background-color: red;
+}
+.bg-blue{
+  background-color: blue;
+}
