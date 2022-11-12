@@ -90,6 +90,7 @@ export default function App() {
 
   return (
     <div className="p-2">
+      Prashant
       <select
         value={columnResizeMode}
         onChange={e => setColumnResizeMode(e.target.value)}
