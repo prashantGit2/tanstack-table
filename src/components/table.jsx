@@ -6,6 +6,8 @@ import {
   createColumnHelper,
   flexRender,
   ColumnResizeMode,
+  getGroupedRowModel,
+  getExpandedRowModel,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -46,43 +48,32 @@ const defaultColumns = [
       }),
       columnHelper.accessor("date_of_birth", {
         header: "DOB",
-        cell: (info) => <i>{info.getValue().slice(0, 10)}</i>,
+        cell: (info) => <i>{info.getValue()}</i>,
         footer: (info) => info.column.id,
       }),
     ],
   }),
-
-  // columnHelper.group({
-  //   header: 'Address',
-  //   footer: props => props.column.id,
-  //   columns: [
-  //     // Accessor Column
-  //     columnHelper.accessor('pincode', {
-  //       cell: info => info.cell.row.original.address.pincode,
-  //       footer: props => props.column.id,
-  //     }),
-  //     // Accessor Column
-  //     columnHelper.accessor(row => row.lastName, {
-  //       id: 'city',
-  //       cell: info => info.cell.row.original.address.city,
-  //       footer: props => props.column.id,
-  //     }),
-  //   ],
-  // }),
 ];
 
-export default function App() {
+export default function Table() {
   const [data, setData] = React.useState(() => [...Data]);
   const rerender = React.useReducer(() => ({}), {})[1];
   const [columns] = React.useState(() => [
     ...defaultColumns,
   ])
   const [columnResizeMode, setColumnResizeMode] = React.useState("onChange");
+  const [grouping, setGrouping] = React.useState([])
   const table = useReactTable({
     data,
     columns,
     columnResizeMode,
+    state: {
+      grouping,
+    },
+    onGroupingChange: setGrouping,
     getCoreRowModel: getCoreRowModel(),
+    getGroupedRowModel:getGroupedRowModel(),
+    getExpandedRowModel:getExpandedRowModel(),
     debugTable: true,
     debugHeaders: true,
     debugColumns: true,
@@ -99,76 +90,7 @@ export default function App() {
         <option value="onEnd">Resize: "onEnd"</option>
         <option value="onChange">Resize: "onChange"</option>
       </select>
-      {/* <div className="overflow-x-auto">
-        <table
-          {...{
-            style: {
-              width: table.getCenterTotalSize(),
-            },
-          }}
-        >
-          <thead>
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th
-                    {...{
-                      key: header.id,
-                      colSpan: header.colSpan,
-                      style: {
-                        width: header.getSize(),
-                      },
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    <div
-                      {...{
-                        onMouseDown: header.getResizeHandler(),
-                        onTouchStart: header.getResizeHandler(),
-                        className: `resizer ${
-                          header.column.getIsResizing() ? 'isResizing' : ''
-                        }`,
-                        style: {
-                          transform:
-                            columnResizeMode === 'onEnd' &&
-                            header.column.getIsResizing()
-                              ? `translateX(${
-                                  table.getState().columnSizingInfo.deltaOffset
-                                }px)`
-                              : '',
-                        },
-                      }}
-                    />
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map(cell => (
-                  <td
-                    {...{
-                      key: cell.id,
-                      style: {
-                        width: cell.column.getSize(),
-                      },
-                    }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div> */}
+      
       <table
         className="styled-table"
         {...{
@@ -181,40 +103,6 @@ export default function App() {
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                // <th
-                //   {...{
-                //     key: header.id,
-                //     colSpan: header.colSpan,
-                //     style: {
-                //       width: header.getSize(),
-                //     },
-                //   }}
-                // >
-                //   {header.isPlaceholder
-                //     ? null
-                //     : flexRender(
-                //         header.column.columnDef.header,
-                //         header.getContext()
-                //       )}
-                //   <div
-                //     {...{
-                //       onMouseDown: header.getResizeHandler(),
-                //       onTouchStart: header.getResizeHandler(),
-                //       className: `resizer ${
-                //         header.column.getIsResizing() ? "isResizing" : ""
-                //       }`,
-                //       style: {
-                //         transform:
-                //           columnResizeMode === "onEnd" &&
-                //           header.column.getIsResizing()
-                //             ? `translateX(${
-                //                 table.getState().columnSizingInfo.deltaOffset
-                //               }px)`
-                //             : "",
-                //       },
-                //     }}
-                //   />
-                // </th>
                 <th
                     {...{
                       key: header.id,
@@ -226,10 +114,27 @@ export default function App() {
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
+                      : (<div>
+                        {header.column.getCanGroup() ? (
+                          // If the header can be grouped, let's add a toggle
+                          <button
+                            {...{
+                              onClick: header.column.getToggleGroupingHandler(),
+                              style: {
+                                cursor: 'pointer',
+                              },
+                            }}
+                          >
+                            {header.column.getIsGrouped()
+                              ? `🛑(${header.column.getGroupedIndex()}) `
+                              : `👊 `}
+                          </button>
+                        ) : null}{' '}
+                        {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
                         )}
+                      </div>)}
                     <div
                       {...{
                         onMouseDown: header.getResizeHandler(),
@@ -254,15 +159,7 @@ export default function App() {
           ))}
         </thead>
         <tbody>
-          {/* {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))} */}
+          
           {table.getRowModel().rows.map(row => (
               <tr key={row.id}>
                 {row.getVisibleCells().map(cell => (
@@ -271,10 +168,53 @@ export default function App() {
                       key: cell.id,
                       style: {
                         width: cell.column.getSize(),
+                        background: cell.getIsGrouped()
+                            ? '#0aff0082'
+                            : cell.getIsAggregated()
+                            ? '#ffa50078'
+                            : cell.getIsPlaceholder()
+                            ? '#ff000042'
+                            : 'white',
                       },
                     }}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {/* {flexRender(cell.column.columnDef.cell, cell.getContext())} */}
+                    {cell.getIsGrouped() ? (
+                        // If it's a grouped cell, add an expander and row count
+                        <>
+                          <button
+                            {...{
+                              onClick: row.getToggleExpandedHandler(),
+                              style: {
+                                cursor: row.getCanExpand()
+                                  ? 'pointer'
+                                  : 'normal',
+                              },
+                            }}
+                          >
+                            {row.getIsExpanded() ? '👇' : '👉'}{' '}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}{' '}
+                            ({row.subRows.length})
+                          </button>
+                        </>
+                      ) : cell.getIsAggregated() ? (
+                        // If the cell is aggregated, use the Aggregated
+                        // renderer for cell
+                        flexRender(
+                          cell.column.columnDef.aggregatedCell ??
+                            cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
+                      ) : cell.getIsPlaceholder() ? null : ( // For cells with repeated values, render null
+                        // Otherwise, just render the regular cell
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )
+                      )}
                   </td>
                 ))}
               </tr>
